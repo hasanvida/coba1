@@ -42,6 +42,8 @@ exports.handler = async function(event, context) {
             body: formData.toString(),
         });
 
+        // Always attempt to parse the response data, even if response.ok is false,
+        // as APIs often put error details in the JSON body.
         const data = await response.json();
 
         // Check if the authentication was successful and an access token was received
@@ -50,9 +52,6 @@ exports.handler = async function(event, context) {
                 statusCode: 200,
                 headers: {
                     "Content-Type": "application/json",
-                    // Allow CORS from any origin for the Netlify function itself.
-                    // For production, you might want to restrict this to your specific Netlify site's domain
-                    // e.g., "Access-Control-Allow-Origin": "https://your-site-name.netlify.app"
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "POST",
                     "Access-Control-Allow-Headers": "Content-Type"
@@ -60,8 +59,8 @@ exports.handler = async function(event, context) {
                 body: JSON.stringify({ access_token: data.access_token }),
             };
         } else {
-            // Log the error from the external API for debugging
-            console.error('Authentication API responded with an error:', data);
+            // Log the full response data for debugging, then return an error
+            console.error('Authentication API responded with non-OK status or missing token:', data);
             return {
                 statusCode: response.status || 500, // Use the API's status code or a generic 500
                 headers: {
@@ -70,7 +69,7 @@ exports.handler = async function(event, context) {
                     "Access-Control-Allow-Methods": "POST",
                     "Access-Control-Allow-Headers": "Content-Type"
                 },
-                body: JSON.stringify({ message: data.error_description || data.message || 'Authentication failed at external API.' }),
+                body: JSON.stringify({ message: data.error_description || data.message || `Authentication failed at external API. Status: ${response.status}. See function logs for details.` }),
             };
         }
     } catch (error) {
@@ -88,4 +87,5 @@ exports.handler = async function(event, context) {
         };
     }
 };
+
 
