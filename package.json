@@ -1,0 +1,15 @@
+ {
+      "name": "ktp-ocr-app-functions",
+      "version": "1.0.0",
+      "description": "Netlify Functions for KTP OCR App",
+      "main": "netlify/functions/authenticate.js",
+      "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "keywords": [],
+      "author": "",
+      "license": "ISC",
+      "dependencies": {
+        "node-fetch": "^2.6.7"
+      }
+    }
