@@ -121,10 +121,10 @@
 
     <script>
         // Constants for API endpoints and credentials
-        const AUTH_API_URL = 'https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token';
+        // The AUTH_API_URL and credentials will now be handled by the Netlify Function
         const OCR_API_URL = 'https://my-services-sandbox.np.vida.id/api/v1/verify/summary';
-        const CLIENT_ID = 'partner-demotest-sso-sandbox';
-        const CLIENT_SECRET = 'pr42jmfddaQnozhwzwW7utDkWi3vAhER';
+        // Netlify Function endpoint for authentication
+        const NETLIFY_AUTH_FUNCTION_URL = '/.netlify/functions/authenticate';
 
         // DOM Elements
         const imageUploadInput = document.getElementById('imageUpload');
@@ -215,34 +215,28 @@
         }
 
         /**
-         * Authenticates with the SSO API to get an access token.
+         * Authenticates using the Netlify Function to get an access token.
          * @returns {Promise<string>} A promise that resolves with the access token.
          */
         async function authenticate() {
-            const formData = new URLSearchParams();
-            formData.append('grant_type', 'client_credentials');
-            formData.append('scope', 'roles');
-            formData.append('client_id', CLIENT_ID);
-            formData.append('client_secret', CLIENT_SECRET);
-
             try {
-                const response = await fetchWithBackoff(AUTH_API_URL, {
-                    method: 'POST',
+                const response = await fetchWithBackoff(NETLIFY_AUTH_FUNCTION_URL, {
+                    method: 'POST', // Netlify Function will handle the POST to Vida's auth API
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': 'application/json', // Can use JSON for calling the function
                     },
-                    body: formData.toString(),
+                    body: JSON.stringify({}), // No body needed from client, secrets are in env vars
                 });
 
                 const data = await response.json();
                 if (data.access_token) {
                     return data.access_token;
                 } else {
-                    throw new Error('Authentication failed: No access token received.');
+                    throw new Error(`Authentication failed via Netlify Function: ${data.message || 'No access token received.'}`);
                 }
             } catch (error) {
-                console.error('Authentication error:', error);
-                showMessageModal(`Authentication failed: ${error.message}. Please try again.`);
+                console.error('Authentication error (via Netlify Function):', error);
+                showMessageModal(`Authentication failed: ${error.message}. Please ensure Netlify Function is deployed correctly and API credentials are set.`);
                 throw error; // Re-throw to propagate the error
             }
         }
@@ -335,7 +329,7 @@
                 // 1. Convert image to Base64
                 const base64Image = await fileToBase64(selectedFile);
 
-                // 2. Authenticate
+                // 2. Authenticate using Netlify Function
                 const accessToken = await authenticate();
 
                 // 3. Perform OCR
@@ -360,3 +354,4 @@
     </script>
 </body>
 </html>
+
