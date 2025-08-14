@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTP OCR Website</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom modal styles for messages */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 bg-gray-100">
+
+    <!-- Main Container -->
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full max-w-5xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">KTP OCR Service</h1>
+
+        <div class="md:flex md:space-x-8">
+            <!-- Left Column: Upload and Preview -->
+            <div class="md:w-1/2 mb-8 md:mb-0">
+                <!-- File Upload Section -->
+                <div class="mb-6 border-b pb-6 border-gray-200">
+                    <label for="imageUpload" class="block text-lg font-medium text-gray-700 mb-3">Upload KTP Document</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-violet-50 file:text-violet-700
+                        hover:file:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 rounded-lg cursor-pointer">
+                    <p class="text-sm text-gray-500 mt-2">Accepted formats: JPG, PNG. Max size: 5MB.</p>
+                </div>
+
+                <!-- Image Preview -->
+                <div class="mb-6 bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center min-h-[150px] border border-gray-200">
+                    <label class="block text-lg font-medium text-gray-700 mb-3 w-full text-center">Image Preview</label>
+                    <img id="imagePreview" src="https://placehold.co/300x200/e0e0e0/555555?text=No+Image" alt="Image Preview" class="max-w-full h-auto rounded-md shadow-sm border border-gray-300">
+                    <p id="imageFileName" class="text-sm text-gray-600 mt-2 truncate w-full text-center">No file selected.</p>
+                    <p id="imageFileSize" class="text-xs text-gray-500 mt-1">Size: 0KB</p>
+                </div>
+
+                <!-- OCR Button -->
+                <button id="processOcrBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Process KTP OCR
+                </button>
+
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="mt-6 text-center text-blue-600 hidden">
+                    <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-2 text-gray-700">Processing...</p>
+                </div>
+            </div>
+
+            <!-- Right Column: OCR Results -->
+            <div class="md:w-1/2">
+                <div id="ocrResults" class="mt-8 md:mt-0 p-4 bg-yellow-50 rounded-lg shadow-inner min-h-[400px] flex flex-col justify-center items-center">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">OCR Results</h3>
+                    <pre id="resultsPre" class="bg-yellow-100 p-3 rounded-md text-sm text-gray-800 whitespace-pre-wrap break-words w-full h-full max-h-[300px] overflow-y-auto border border-yellow-200 flex items-center justify-center text-center">Upload an image and click "Process KTP OCR" to see results here.</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="hideMessageModal()">&times;</span>
+            <p id="modalMessage" class="text-lg font-medium text-gray-800"></p>
+            <button class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300" onclick="hideMessageModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Constants for API endpoints and credentials
+        const AUTH_API_URL = 'https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token';
+        const OCR_API_URL = 'https://my-services-sandbox.np.vida.id/api/v1/verify/summary';
+        const CLIENT_ID = 'partner-demotest-sso-sandbox';
+        const CLIENT_SECRET = 'pr42jmfddaQnozhwzwW7utDkWi3vAhER';
+
+        // DOM Elements
+        const imageUploadInput = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const imageFileName = document.getElementById('imageFileName');
+        const imageFileSize = document.getElementById('imageFileSize');
+        const processOcrBtn = document.getElementById('processOcrBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const ocrResultsDiv = document.getElementById('ocrResults');
+        const resultsPre = document.getElementById('resultsPre');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+
+        let selectedFile = null; // Stores the selected File object
+
+        // Utility function to display messages in a modal
+        function showMessageModal(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex';
+        }
+
+        // Utility function to hide the message modal
+        function hideMessageModal() {
+            messageModal.style.display = 'none';
+        }
+
+        // Utility function to show loading indicator
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+            processOcrBtn.disabled = true;
+            // Clear previous results and show placeholder text
+            resultsPre.textContent = 'Processing... Please wait.';
+            ocrResultsDiv.classList.remove('hidden');
+        }
+
+        // Utility function to hide loading indicator
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+            processOcrBtn.disabled = false;
+        }
+
+        /**
+         * Converts a File object (image) to a Base64 string.
+         * @param {File} file The File object to convert.
+         * @returns {Promise<string>} A promise that resolves with the Base64 string.
+         */
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        /**
+         * Generic fetch wrapper with exponential backoff for retries.
+         * @param {string} url The URL to fetch.
+         * @param {object} options Fetch options.
+         * @param {number} retries The number of retries remaining.
+         * @param {number} delay The current delay before retrying.
+         * @returns {Promise<Response>} The fetch response.
+         */
+        async function fetchWithBackoff(url, options, retries = 3, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    // Retry only for 5xx errors or network issues, not client errors (4xx)
+                    if (response.status >= 500 && retries > 0) {
+                        await new Promise(res => setTimeout(res, delay));
+                        return fetchWithBackoff(url, options, retries - 1, delay * 2);
+                    }
+                    // For client errors or no retries left, throw the error
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                }
+                return response;
+            } catch (error) {
+                if (retries > 0) {
+                    await new Promise(res => setTimeout(res, delay));
+                    return fetchWithBackoff(url, options, retries - 1, delay * 2);
+                }
+                throw new Error(`Network error or maximum retries reached: ${error.message}`);
+            }
+        }
+
+        /**
+         * Authenticates with the SSO API to get an access token.
+         * @returns {Promise<string>} A promise that resolves with the access token.
+         */
+        async function authenticate() {
+            const formData = new URLSearchParams();
+            formData.append('grant_type', 'client_credentials');
+            formData.append('scope', 'roles');
+            formData.append('client_id', CLIENT_ID);
+            formData.append('client_secret', CLIENT_SECRET);
+
+            try {
+                const response = await fetchWithBackoff(AUTH_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString(),
+                });
+
+                const data = await response.json();
+                if (data.access_token) {
+                    return data.access_token;
+                } else {
+                    throw new Error('Authentication failed: No access token received.');
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                showMessageModal(`Authentication failed: ${error.message}. Please try again.`);
+                throw error; // Re-throw to propagate the error
+            }
+        }
+
+        /**
+         * Performs OCR on the KTP image using the OCR API.
+         * @param {string} base64Image The Base64 encoded image string.
+         * @param {string} accessToken The authentication access token.
+         * @returns {Promise<object>} A promise that resolves with the OCR results.
+         */
+        async function performOcr(base64Image, accessToken) {
+            const partnerTrxId = crypto.randomUUID().replace(/-/g, ''); // Generate unique ID
+            const groupId = crypto.randomUUID(); // Generate unique ID
+            const obtainedAt = Math.floor(Date.now() / 1000).toString(); // Current Unix timestamp
+
+            const payload = {
+                operations: ['ocr', 'idVerification'],
+                payload: {
+                    partnerTrxId: partnerTrxId,
+                    groupId: groupId,
+                    idType: 'ID_CARD',
+                    country: 'IDN',
+                    idSubtype: 'KTP',
+                    idFrontSideImage: base64Image,
+                },
+                userConsent: {
+                    userIP: '0.0.0.0', // Placeholder IP
+                    country: 'IDN',
+                    obtained: true,
+                    obtainedAt: obtainedAt,
+                },
+            };
+
+            try {
+                const response = await fetchWithBackoff(OCR_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    return data;
+                } else {
+                    // If response is not ok, data might contain error details
+                    throw new Error(`OCR API error: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('OCR error:', error);
+                showMessageModal(`OCR processing failed: ${error.message}. Please try again.`);
+                throw error; // Re-throw to propagate the error
+            }
+        }
+
+        // Event listener for image file upload
+        imageUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                imageFileName.textContent = file.name;
+                imageFileSize.textContent = `Size: ${(file.size / 1024).toFixed(2)} KB`;
+                // Set initial text for results area
+                resultsPre.textContent = 'Upload an image and click "Process KTP OCR" to see results here.';
+            } else {
+                selectedFile = null;
+                imagePreview.src = "https://placehold.co/300x200/e0e0e0/555555?text=No+Image";
+                imageFileName.textContent = 'No file selected.';
+                imageFileSize.textContent = 'Size: 0KB';
+                resultsPre.textContent = 'Upload an image and click "Process KTP OCR" to see results here.';
+            }
+        });
+
+        // Event listener for the OCR process button
+        processOcrBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showMessageModal('Please upload a KTP image first.');
+                return;
+            }
+
+            showLoading();
+            try {
+                // 1. Convert image to Base64
+                const base64Image = await fileToBase64(selectedFile);
+
+                // 2. Authenticate
+                const accessToken = await authenticate();
+
+                // 3. Perform OCR
+                const ocrResult = await performOcr(base64Image, accessToken);
+
+                // Display results
+                resultsPre.textContent = JSON.stringify(ocrResult, null, 2);
+
+            } catch (error) {
+                console.error("Failed to process OCR:", error);
+                // Error messages are already shown by `showMessageModal` inside authenticate/performOcr
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Initialize with default state
+        window.onload = () => {
+            hideLoading();
+        };
+
+    </script>
+</body>
+</html>
