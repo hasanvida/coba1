@@ -38,6 +38,27 @@
         .text-vida-code-text { color: var(--color-vida-code-text); }
         .border-vida-green { border-color: var(--color-vida-green); }
         .focus\:border-vida-green:focus { border-color: var(--color-vida-green); }
+
+        /* Custom styles for the table */
+        .ocr-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .ocr-table th, .ocr-table td {
+            border: 1px solid #ccc; /* Light gray border */
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .ocr-table th {
+            background-color: var(--color-vida-navy);
+            color: var(--color-vida-white);
+            font-weight: bold;
+        }
+        .ocr-table tbody tr:nth-child(even) {
+            background-color: #f0f0f0; /* Slightly lighter background for even rows */
+        }
     </style>
 </head>
 <body class="bg-vida-light-gray min-h-screen flex items-center justify-center p-4">
@@ -46,8 +67,6 @@
         <div class="flex-1 flex flex-col items-center justify-center p-6 bg-vida-light-gray rounded-lg shadow-md">
             <img src="VIDA_2023-09.webp" alt="VIDA Logo" class="mb-6 h-12 object-contain" onerror="this.onerror=null; this.src='https://placehold.co/150x50/FFFFFF/000000?text=VIDA+Logo';">
             <h2 class="text-2xl font-bold text-vida-navy mb-6">KTP OCR Service</h2>
-
-            <!-- Removed Access Token input field -->
 
             <div class="mb-6 w-full">
                 <label for="imageUpload" class="block text-lg font-medium text-vida-dark-text mb-2">Select KTP Image:</label>
@@ -71,14 +90,10 @@
                 Processing image...
             </div>
 
-            <pre id="apiResponse" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner">
-                <code class="language-json">
-                    {
-    "message": "Upload an image and click 'Process OCR' to see the response.",
-    "instructions": "The OCR result will appear here."
-}
-                </code>
-            </pre>
+            <div id="apiResponse" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner">
+                <p class="text-vida-dark-text">Upload an image and click 'Process OCR' to see the response.</p>
+                <p class="text-vida-dark-text text-xs mt-2">The OCR result will appear here, formatted for readability.</p>
+            </div>
 
             <!-- Custom Modal for Alerts -->
             <div id="customAlertDialog" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
@@ -95,7 +110,6 @@
 
     <script>
         // Get references to DOM elements
-        // const accessTokenInput = document.getElementById('accessToken'); // Removed
         const imageUpload = document.getElementById('imageUpload');
         const imagePreview = document.getElementById('imagePreview');
         const processOcrButton = document.getElementById('processOcrButton');
@@ -131,47 +145,37 @@
                     imagePreview.src = e.target.result;
                     // Store base64 without the "data:image/jpeg;base64," prefix
                     base64Image = e.target.result.split(',')[1];
-                    apiResponse.innerHTML = `<code class="language-json">
-                        {
-                            "message": "Image uploaded successfully. Ready to process.",
-                            "fileName": "${file.name}",
-                            "fileSize": "${(file.size / 1024).toFixed(2)} KB"
-                        }
-                    </code>`;
+                    apiResponse.innerHTML = `
+                        <p class="text-vida-dark-text">Image uploaded successfully: <strong>${file.name}</strong> (${(file.size / 1024).toFixed(2)} KB).</p>
+                        <p class="text-vida-dark-text text-xs mt-2">Click 'Process OCR' to analyze the image.</p>
+                    `;
                 };
                 reader.readAsDataURL(file);
             } else {
                 imagePreview.src = "https://placehold.co/400x250/E2E8F0/A0AEC0?text=Image+Preview"; // Reset to placeholder
                 base64Image = '';
-                apiResponse.innerHTML = `<code class="language-json">
-                    {
-                        "message": "No image selected. Please upload an image.",
-                        "instructions": "Upload KTP image to begin OCR processing."
-                    }
-                </code>`;
+                apiResponse.innerHTML = `
+                    <p class="text-vida-dark-text">No image selected. Please upload an image.</p>
+                    <p class="text-vida-dark-text text-xs mt-2">Upload KTP image to begin OCR processing.</p>
+                `;
             }
         });
 
         // Event listener for processing OCR
         processOcrButton.addEventListener('click', async function() {
-            // No need for accessToken input as it's handled by the Netlify Function
-            // const accessToken = accessTokenInput.value.trim();
-            // if (!accessToken) { ... } // Removed validation
-
             if (!base64Image) {
                 showCustomAlert('No Image Selected', 'Please select a KTP image file to process.');
                 return;
             }
 
             loadingIndicator.classList.remove('hidden'); // Show loading indicator
-            apiResponse.textContent = ''; // Clear previous response
+            apiResponse.innerHTML = `<p class="text-vida-green">Processing image...</p>`; // Clear previous response and show loading message
 
             try {
                 const proxyUrl = '/.netlify/functions/process-ocr'; // Endpoint for the OCR Netlify Function
 
                 const payload = {
-                    // accessToken is no longer sent from frontend, handled by function
-                    ocrPayload: { // The OCR specific payload
+                    ocrPayload: { // The OCR specific payload for VIDA API
                         "operations": ["ocr", "idVerification"],
                         "payload": {
                             "partnerTrxId": "WEB_APP_OCR_" + Date.now(), // Generate a unique ID
@@ -210,17 +214,63 @@
                 }
 
                 const data = await response.json();
-                apiResponse.innerHTML = `<code class="language-json">${JSON.stringify(data, null, 2)}</code>`;
+                
+                // --- Start of Human-Readable Formatting ---
+                let outputHtml = `<p class="text-vida-navy font-semibold text-lg mb-2">OCR Processing Result:</p>`;
+
+                if (data.status === 'SUCCESS' && data.result && data.result.ocr && data.result.ocr.extractedData) {
+                    const extractedData = data.result.ocr.extractedData;
+                    const confidence = data.result.ocr.confidence || 'N/A';
+                    const timestamp = new Date(parseInt(data.timestamp) * 1000).toLocaleString(); // Convert epoch to human-readable date
+
+                    outputHtml += `<p class="text-vida-dark-text"><strong>Overall Status:</strong> <span class="text-vida-green">${data.status}</span></p>`;
+                    outputHtml += `<p class="text-vida-dark-text"><strong>Confidence:</strong> ${confidence}</p>`;
+                    outputHtml += `<p class="text-vida-dark-text mb-4"><strong>Timestamp:</strong> ${timestamp}</p>`;
+
+                    outputHtml += `<table class="ocr-table">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    
+                    for (const key in extractedData) {
+                        if (Object.hasOwnProperty.call(extractedData, key)) {
+                            // Format keys to be more human-readable (e.g., "idFrontSideImage" -> "ID Front Side Image")
+                            const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                            outputHtml += `<tr>
+                                <td>${readableKey}</td>
+                                <td>${extractedData[key] || 'N/A'}</td>
+                            </tr>`;
+                        }
+                    }
+                    outputHtml += `</tbody></table>`;
+
+                    if (data.result.idVerification && data.result.idVerification.status) {
+                        outputHtml += `<p class="text-vida-dark-text mt-4"><strong>ID Verification Status:</strong> ${data.result.idVerification.status}</p>`;
+                        if (data.result.idVerification.details) {
+                            outputHtml += `<p class="text-vida-dark-text text-sm">Details: ${JSON.stringify(data.result.idVerification.details)}</p>`;
+                        }
+                    }
+
+                } else {
+                    // Fallback for unexpected success structure or non-ocr results
+                    outputHtml += `<p class="text-vida-dark-text">Received a response, but couldn't parse OCR data. Raw response:</p>`;
+                    outputHtml += `<pre class="bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner mt-2">${JSON.stringify(data, null, 2)}</pre>`;
+                }
+                apiResponse.innerHTML = outputHtml;
+                // --- End of Human-Readable Formatting ---
 
             } catch (error) {
                 let errorMessage = `Error: ${error.message}`;
                 showCustomAlert('OCR Processing Error', errorMessage);
-                apiResponse.innerHTML = `<code class="language-json">
-                    {
-                        "error": "OCR Processing Failed",
-                        "details": "${errorMessage}"
-                    }
-                </code>`;
+                apiResponse.innerHTML = `
+                    <p class="text-red-500 font-semibold">OCR Processing Failed!</p>
+                    <p class="text-red-500 text-sm mt-2">Details: ${errorMessage}</p>
+                    <p class="text-vida-dark-text text-xs mt-2">Please check your network connection, access token, and the image file.</p>
+                `;
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
             }
@@ -228,4 +278,5 @@
     </script>
 </body>
 </html>
+
 
