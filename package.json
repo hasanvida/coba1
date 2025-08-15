@@ -1,0 +1,17 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "description": "Dependencies for Netlify Functions",
+  "main": "authenticate.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^2.6.7"  
+    // Note: Netlify's runtime might be older, so an older version of node-fetch (like 2.x) is safer.
+    // If you encounter issues, try a more recent version or check Netlify's Node.js version.
+  }
+}
