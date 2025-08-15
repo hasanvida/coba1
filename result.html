@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIDA KTP OCR - Result</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and rounded corners */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .rounded-elements * {
+            border-radius: 0.5rem; /* Apply rounded corners to child elements */
+        }
+        /* Define custom colors for Tailwind */
+        :root {
+            --color-vida-navy: #0A2E50; /* A deep navy */
+            --color-vida-green: #00B050; /* A vibrant green */
+            --color-vida-green-dark: #008F40; /* A darker green for hover */
+            --color-vida-white: #FFFFFF; /* Pure white */
+            --color-vida-light-gray: #F8F8F8; /* Very light gray for background */
+            --color-vida-dark-text: #333333; /* Dark gray for general text */
+            --color-vida-code-bg: #1A202C; /* Dark background for code block */
+            --color-vida-code-text: #68D391; /* Light green for code text */
+        }
+
+        .bg-vida-navy { background-color: var(--color-vida-navy); }
+        .text-vida-navy { color: var(--color-vida-navy); }
+        .bg-vida-green { background-color: var(--color-vida-green); }
+        .hover\:bg-vida-green-dark:hover { background-color: var(--color-vida-green-dark); }
+        .text-vida-green { color: var(--color-vida-green); }
+        .focus\:ring-vida-green:focus { --tw-ring-color: var(--color-vida-green); }
+        .bg-vida-light-gray { background-color: var(--color-vida-light-gray); }
+        .text-vida-dark-text { color: var(--color-dark-text); }
+        .bg-vida-code-bg { background-color: var(--color-vida-code-bg); }
+        .text-vida-code-text { color: var(--color-vida-code-text); }
+        .border-vida-green { border-color: var(--color-vida-green); }
+        .focus\:border-vida-green:focus { border-color: var(--color-vida-green); }
+
+        /* Custom styles for the table */
+        .ocr-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .ocr-table th, .ocr-table td {
+            border: 1px solid #ccc; /* Light gray border */
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .ocr-table th {
+            background-color: var(--color-vida-navy);
+            color: var(--color-vida-white);
+            font-weight: bold;
+        }
+        .ocr-table tbody tr:nth-child(even) {
+            background-color: #f0f0f0; /* Slightly lighter background for even rows */
+        }
+    </style>
+</head>
+<body class="bg-vida-light-gray min-h-screen flex items-center justify-center p-4">
+    <div class="bg-vida-white shadow-xl rounded-xl p-8 max-w-4xl w-full flex flex-col gap-8 rounded-elements">
+        <h1 class="text-3xl font-bold text-vida-navy text-center mb-6">OCR API Response</h1>
+
+        <div class="flex-1 flex flex-col p-6 bg-vida-light-gray rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-vida-navy mb-4">Detailed Result</h2>
+            <div id="responseContent" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner h-96">
+                <p class="text-gray-400">Loading response...</p>
+            </div>
+            <button id="backButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2 mt-6">
+                &larr; Back to Upload
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const responseContent = document.getElementById('responseContent');
+        const backButton = document.getElementById('backButton');
+
+        function formatExtractedDataToTable(extractedData) {
+            let tableHtml = `<table class="ocr-table">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            for (const key in extractedData) {
+                if (Object.hasOwnProperty.call(extractedData, key)) {
+                    const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                    tableHtml += `<tr>
+                        <td>${readableKey}</td>
+                        <td>${extractedData[key] || 'N/A'}</td>
+                    </tr>`;
+                }
+            }
+            tableHtml += `</tbody></table>`;
+            return tableHtml;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedResponse = sessionStorage.getItem('ocrResponseData');
+            if (storedResponse) {
+                try {
+                    const data = JSON.parse(storedResponse);
+                    let outputHtml = '';
+
+                    // Handle success response
+                    if (data.status === 'SUCCESS' && data.result && data.result.ocr && data.result.ocr.extractedData) {
+                        const extractedData = data.result.ocr.extractedData;
+                        const confidence = data.result.ocr.confidence || 'N/A';
+                        const timestamp = new Date(parseInt(data.timestamp) * 1000).toLocaleString();
+
+                        outputHtml += `<p class="text-vida-navy font-semibold text-lg mb-2">OCR Processing Result: <span class="text-vida-green">${data.status}</span></p>`;
+                        outputHtml += `<p class="text-vida-dark-text"><strong>Confidence:</strong> ${confidence}</p>`;
+                        outputHtml += `<p class="text-vida-dark-text mb-4"><strong>Timestamp:</strong> ${timestamp}</p>`;
+                        outputHtml += formatExtractedDataToTable(extractedData);
+
+                        if (data.result.idVerification && data.result.idVerification.status) {
+                            outputHtml += `<p class="text-vida-dark-text mt-4"><strong>ID Verification Status:</strong> ${data.result.idVerification.status}</p>`;
+                            if (data.result.idVerification.details) {
+                                outputHtml += `<p class="text-vida-dark-text text-sm">Details: ${JSON.stringify(data.result.idVerification.details)}</p>`;
+                            }
+                        }
+
+                    } else if (data.error) { // Handle general errors passed from index.html
+                        let errorMessage = data.error;
+                        let ocrTableHtml = '';
+                        let errorParsed = false;
+
+                        // Try to parse error details from the proxy's error message
+                        try {
+                            // Example error string: "Error: OCR request failed: OCR API call failed: {...JSON...}"
+                            const apiErrorMatch = errorMessage.match(/OCR API call failed: ({.*})/);
+                            if (apiErrorMatch && apiErrorMatch[1]) {
+                                const apiErrorData = JSON.parse(apiErrorMatch[1]);
+                                if (apiErrorData.errors && apiErrorData.errors.length > 0) {
+                                    const errorReason = apiErrorData.errors[0].message;
+                                    const errorCode = apiErrorData.errors[0].code;
+                                    outputHtml += `<p class="text-red-500 font-semibold text-lg mb-2">Error! Reason: ${errorReason}, Code: ${errorCode}</p>`;
+                                    errorParsed = true;
+                                } else if (apiErrorData.error || apiErrorData.message) {
+                                     outputHtml += `<p class="text-red-500 font-semibold text-lg mb-2">Error! Reason: ${apiErrorData.error || apiErrorData.message}</p>`;
+                                     errorParsed = true;
+                                }
+
+                                if (apiErrorData.ocrResult) {
+                                    outputHtml += `<p class="text-vida-dark-text mt-4 font-semibold">Partial OCR Result (from Error Response):</p>`;
+                                    outputHtml += formatExtractedDataToTable(apiErrorData.ocrResult);
+                                }
+                            }
+                        } catch (parseError) {
+                            console.warn("Could not parse detailed error JSON within string:", parseError);
+                        }
+
+                        if (!errorParsed) {
+                            outputHtml += `<p class="text-red-500 font-semibold text-lg mb-2">OCR Processing Failed!</p>`;
+                            outputHtml += `<p class="text-red-500 text-sm mt-2">Details: ${errorMessage}</p>`;
+                        }
+                        outputHtml += `<p class="text-vida-dark-text text-xs mt-2">Please check your network connection, access token (if applicable), and the image file.</p>`;
+
+                    } else {
+                        // Fallback for unexpected or malformed response
+                        outputHtml += `<p class="text-vida-dark-text">Received an unexpected response format. Raw response:</p>`;
+                        outputHtml += `<pre class="bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner mt-2">${storedResponse}</pre>`;
+                    }
+                    responseContent.innerHTML = outputHtml;
+
+                } catch (parseError) {
+                    // Handle cases where sessionStorage content is not valid JSON
+                    responseContent.innerHTML = `
+                        <p class="text-red-500 font-semibold">Error displaying response.</p>
+                        <p class="text-red-500 text-sm mt-2">Could not parse stored data: ${parseError.message}</p>
+                        <p class="text-vida-dark-text text-xs mt-2">Raw stored content:</p>
+                        <pre class="bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner mt-2">${storedResponse}</pre>
+                    `;
+                } finally {
+                    // Always clear the stored data after displaying it to ensure fresh data on next visit
+                    sessionStorage.removeItem('ocrResponseData');
+                }
+            } else {
+                responseContent.innerHTML = `
+                    <p class="text-vida-dark-text">No OCR response data found.</p>
+                    <p class="text-vida-dark-text text-xs mt-2">Please return to the upload page and process an image.</p>
+                    <p class="text-vida-dark-text text-xs mt-2">This might happen if you navigated directly to this page or refreshed it.</p>
+                `;
+            }
+        });
+
+        backButton.addEventListener('click', () => {
+            window.location.href = 'index.html'; // Navigate back to the first page
+        });
+    </script>
+</body>
+</html>
