@@ -2,7 +2,7 @@
   "name": "netlify-functions",
   "version": "1.0.0",
   "description": "Dependencies for Netlify Functions",
-  "main": "authenticate.js",
+  "main": "process-ocr.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
