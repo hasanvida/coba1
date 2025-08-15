@@ -185,6 +185,7 @@
                 });
 
                 if (!response.ok) {
+                    // Even if the proxy returns a non-OK status, we still want to pass the error details to result.html
                     let errorDetails = `HTTP Status: ${response.status}`;
                     try {
                         const errorData = await response.json();
@@ -192,7 +193,10 @@
                     } catch (parseError) {
                         errorDetails = response.statusText;
                     }
-                    throw new Error(`OCR request failed: ${errorDetails}`);
+                    // Store the error details in sessionStorage and redirect
+                    sessionStorage.setItem('ocrResponseData', JSON.stringify({ error: `OCR request failed: ${errorDetails}` }, null, 2));
+                    window.location.href = 'result.html';
+                    return; // Stop execution here as we're redirecting
                 }
 
                 const data = await response.json();
@@ -204,10 +208,11 @@
                 window.location.href = 'result.html';
 
             } catch (error) {
-                let errorMessage = `Error: ${error.message}`;
-                let formattedErrorMessage = `OCR Processing Failed! Details: ${errorMessage}`;
-                // Simplified error display for this page, actual parsing on result.html if needed
-                showCustomAlert('OCR Processing Error', formattedErrorMessage);
+                let errorMessage = `Network error or unexpected issue: ${error.message}`;
+                // This catch block handles network errors *before* a response is received from the proxy function.
+                // It means the fetch call itself failed (e.g., no internet, or proxy function not found/working).
+                sessionStorage.setItem('ocrResponseData', JSON.stringify({ error: errorMessage }, null, 2));
+                window.location.href = 'result.html'; // Redirect to show this error on the result page
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
             }
@@ -215,6 +220,7 @@
     </script>
 </body>
 </html>
+
 
 
 
