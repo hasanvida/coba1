@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIDA KTP OCR</title>
+    <title>VIDA KTP OCR - Upload</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -39,7 +39,7 @@
         .border-vida-green { border-color: var(--color-vida-green); }
         .focus\:border-vida-green:focus { border-color: var(--color-vida-green); }
 
-        /* Custom styles for the table */
+        /* Custom styles for the table (not used on this page, but kept for consistency if ever needed) */
         .ocr-table {
             width: 100%;
             border-collapse: collapse;
@@ -62,11 +62,11 @@
     </style>
 </head>
 <body class="bg-vida-light-gray min-h-screen flex items-center justify-center p-4">
-    <div class="bg-vida-white shadow-xl rounded-xl p-8 max-w-6xl w-full flex flex-col lg:flex-row gap-8 rounded-elements">
-        <!-- Left Part: Image Upload and Preview -->
-        <div class="flex-1 flex flex-col items-center justify-center p-6 bg-vida-light-gray rounded-lg shadow-md">
+    <div class="bg-vida-white shadow-xl rounded-xl p-8 max-w-2xl w-full flex flex-col items-center gap-8 rounded-elements">
+        <!-- Main Content: Image Upload and Preview -->
+        <div class="flex-1 flex flex-col items-center justify-center p-6 bg-vida-light-gray rounded-lg shadow-md w-full">
             <img src="VIDA_2023-09.webp" alt="VIDA Logo" class="mb-6 h-12 object-contain" onerror="this.onerror=null; this.src='https://placehold.co/150x50/FFFFFF/000000?text=VIDA+Logo';">
-            <h2 class="text-2xl font-bold text-vida-navy mb-6">KTP OCR Service</h2>
+            <h2 class="text-2xl font-bold text-vida-navy mb-6">Upload KTP Image for OCR</h2>
 
             <div class="mb-6 w-full">
                 <label for="imageUpload" class="block text-lg font-medium text-vida-dark-text mb-2">Select KTP Image:</label>
@@ -80,31 +80,20 @@
             <button id="processOcrButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
                 Process OCR
             </button>
+            <div id="loadingIndicator" class="hidden text-center text-vida-green font-medium mt-4">
+                Processing image... Redirecting to results...
+            </div>
         </div>
+    </div>
 
-        <!-- Right Part: API Response Display -->
-        <div class="flex-1 flex flex-col p-6 bg-vida-light-gray rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold text-vida-navy mb-6">OCR API Response</h2>
-
-            <div id="loadingIndicator" class="hidden text-center text-vida-green font-medium mb-4">
-                Processing image...
-            </div>
-
-            <div id="apiResponse" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner">
-                <p class="text-vida-dark-text">Upload an image and click 'Process OCR' to see the response.</p>
-                <p class="text-vida-dark-text text-xs mt-2">The OCR result will appear here, formatted for readability.</p>
-            </div>
-
-            <!-- Custom Modal for Alerts -->
-            <div id="customAlertDialog" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-                    <h3 id="alertDialogTitle" class="text-xl font-bold text-vida-navy mb-4"></h3>
-                    <p id="alertDialogMessage" class="text-vida-dark-text mb-6"></p>
-                    <button id="alertDialogCloseButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-2.5 rounded-lg transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
-                        OK
-                    </button>
-                </div>
-            </div>
+    <!-- Custom Modal for Alerts -->
+    <div id="customAlertDialog" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 id="alertDialogTitle" class="text-xl font-bold text-vida-navy mb-4"></h3>
+            <p id="alertDialogMessage" class="text-vida-dark-text mb-6"></p>
+            <button id="alertDialogCloseButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-2.5 rounded-lg transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
+                OK
+            </button>
         </div>
     </div>
 
@@ -113,7 +102,6 @@
         const imageUpload = document.getElementById('imageUpload');
         const imagePreview = document.getElementById('imagePreview');
         const processOcrButton = document.getElementById('processOcrButton');
-        const apiResponse = document.getElementById('apiResponse');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
         // Custom alert dialog elements
@@ -145,19 +133,14 @@
                     imagePreview.src = e.target.result;
                     // Store base64 without the "data:image/jpeg;base64," prefix
                     base64Image = e.target.result.split(',')[1];
-                    apiResponse.innerHTML = `
-                        <p class="text-vida-dark-text">Image uploaded successfully: <strong>${file.name}</strong> (${(file.size / 1024).toFixed(2)} KB).</p>
-                        <p class="text-vida-dark-text text-xs mt-2">Click 'Process OCR' to analyze the image.</p>
-                    `;
+                    // Optional: Provide immediate feedback on this page
+                    // console.log("Image uploaded and converted to base64.");
                 };
                 reader.readAsDataURL(file);
             } else {
                 imagePreview.src = "https://placehold.co/400x250/E2E8F0/A0AEC0?text=Image+Preview"; // Reset to placeholder
                 base64Image = '';
-                apiResponse.innerHTML = `
-                    <p class="text-vida-dark-text">No image selected. Please upload an image.</p>
-                    <p class="text-vida-dark-text text-xs mt-2">Upload KTP image to begin OCR processing.</p>
-                `;
+                // console.log("No image selected.");
             }
         });
 
@@ -169,7 +152,6 @@
             }
 
             loadingIndicator.classList.remove('hidden'); // Show loading indicator
-            apiResponse.innerHTML = `<p class="text-vida-green">Processing image...</p>`; // Clear previous response and show loading message
 
             try {
                 const proxyUrl = '/.netlify/functions/process-ocr'; // Endpoint for the OCR Netlify Function
@@ -214,113 +196,18 @@
                 }
 
                 const data = await response.json();
+                
+                // Store the full JSON response in sessionStorage
+                sessionStorage.setItem('ocrResponseData', JSON.stringify(data, null, 2));
 
-                // --- Start of Human-Readable Formatting ---
-                let outputHtml = `<p class="text-vida-navy font-semibold text-lg mb-2">OCR Processing Result:</p>`;
-
-                if (data.status === 'SUCCESS' && data.result && data.result.ocr && data.result.ocr.extractedData) {
-                    const extractedData = data.result.ocr.extractedData;
-                    const confidence = data.result.ocr.confidence || 'N/A';
-                    const timestamp = new Date(parseInt(data.timestamp) * 1000).toLocaleString(); // Convert epoch to human-readable date
-
-                    outputHtml += `<p class="text-vida-dark-text"><strong>Overall Status:</strong> <span class="text-vida-green">${data.status}</span></p>`;
-                    outputHtml += `<p class="text-vida-dark-text"><strong>Confidence:</strong> ${confidence}</p>`;
-                    outputHtml += `<p class="text-vida-dark-text mb-4"><strong>Timestamp:</strong> ${timestamp}</p>`;
-
-                    outputHtml += `<table class="ocr-table">
-                        <thead>
-                            <tr>
-                                <th>Field</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-                    for (const key in extractedData) {
-                        if (Object.hasOwnProperty.call(extractedData, key)) {
-                            // Format keys to be more human-readable (e.g., "idFrontSideImage" -> "ID Front Side Image")
-                            const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                            outputHtml += `<tr>
-                                <td>${readableKey}</td>
-                                <td>${extractedData[key] || 'N/A'}</td>
-                            </tr>`;
-                        }
-                    }
-                    outputHtml += `</tbody></table>`;
-
-                    if (data.result.idVerification && data.result.idVerification.status) {
-                        outputHtml += `<p class="text-vida-dark-text mt-4"><strong>ID Verification Status:</strong> ${data.result.idVerification.status}</p>`;
-                        if (data.result.idVerification.details) {
-                            outputHtml += `<p class="text-vida-dark-text text-sm">Details: ${JSON.stringify(data.result.idVerification.details)}</p>`;
-                        }
-                    }
-
-                } else {
-                    // Fallback for unexpected success structure or non-ocr results
-                    outputHtml += `<p class="text-vida-dark-text">Received a response, but couldn't parse OCR data. Raw response:</p>`;
-                    outputHtml += `<pre class="bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner mt-2">${JSON.stringify(data, null, 2)}</pre>`;
-                }
-                apiResponse.innerHTML = outputHtml;
-                // --- End of Human-Readable Formatting ---
+                // Redirect to the results page
+                window.location.href = 'result.html';
 
             } catch (error) {
                 let errorMessage = `Error: ${error.message}`;
                 let formattedErrorMessage = `OCR Processing Failed! Details: ${errorMessage}`;
-                let ocrTableHtml = '';
-
-                try {
-                    // Attempt to parse the error message if it contains JSON
-                    const jsonStartIndex = errorMessage.indexOf('{');
-                    if (jsonStartIndex !== -1) {
-                        const jsonPart = errorMessage.substring(jsonStartIndex);
-                        const errorData = JSON.parse(jsonPart);
-
-                        if (errorData.errors && errorData.errors.length > 0) {
-                            const errorReason = errorData.errors[0].message;
-                            const errorCode = errorData.errors[0].code;
-                            formattedErrorMessage = `Error! Reason: ${errorReason}, Code: ${errorCode}`;
-                        } else if (errorData.error || errorData.message) {
-                            formattedErrorMessage = `Error! Reason: ${errorData.error || errorData.message}`;
-                        } else {
-                             formattedErrorMessage = `Error! Raw response: ${JSON.stringify(errorData)}`;
-                        }
-
-
-                        // Check for ocrResult even in error responses
-                        if (errorData.ocrResult) {
-                            const extractedData = errorData.ocrResult;
-                            ocrTableHtml = `<p class="text-vida-dark-text mt-4 font-semibold">Partial OCR Result (from Error Response):</p>
-                                <table class="ocr-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Field</th>
-                                            <th>Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>`;
-                            for (const key in extractedData) {
-                                if (Object.hasOwnProperty.call(extractedData, key)) {
-                                    const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                                    ocrTableHtml += `<tr>
-                                        <td>${readableKey}</td>
-                                        <td>${extractedData[key] || 'N/A'}</td>
-                                    </tr>`;
-                                }
-                            }
-                            ocrTableHtml += `</tbody></table>`;
-                        }
-                    }
-                } catch (parseError) {
-                    console.warn("Could not parse detailed error JSON:", parseError);
-                    // Fallback to original errorMessage if parsing fails
-                }
-
-                showCustomAlert('OCR Error', formattedErrorMessage); // Show a general alert
-                apiResponse.innerHTML = `
-                    <p class="text-red-500 font-semibold">${formattedErrorMessage}</p>
-                    <p class="text-red-500 text-sm mt-2">Please check your network connection and the image file.</p>
-                    ${ocrTableHtml}
-                `;
+                // Simplified error display for this page, actual parsing on result.html if needed
+                showCustomAlert('OCR Processing Error', formattedErrorMessage);
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
             }
@@ -328,6 +215,7 @@
     </script>
 </body>
 </html>
+
 
 
 
