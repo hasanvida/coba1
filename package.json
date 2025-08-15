@@ -10,8 +10,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "node-fetch": "^2.6.7"  
-    // Note: Netlify's runtime might be older, so an older version of node-fetch (like 2.x) is safer.
-    // If you encounter issues, try a more recent version or check Netlify's Node.js version.
+    "node-fetch": "^2.6.7"
   }
 }
