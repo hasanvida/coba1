@@ -214,7 +214,7 @@
                 }
 
                 const data = await response.json();
-                
+
                 // --- Start of Human-Readable Formatting ---
                 let outputHtml = `<p class="text-vida-navy font-semibold text-lg mb-2">OCR Processing Result:</p>`;
 
@@ -235,7 +235,7 @@
                             </tr>
                         </thead>
                         <tbody>`;
-                    
+
                     for (const key in extractedData) {
                         if (Object.hasOwnProperty.call(extractedData, key)) {
                             // Format keys to be more human-readable (e.g., "idFrontSideImage" -> "ID Front Side Image")
@@ -265,11 +265,61 @@
 
             } catch (error) {
                 let errorMessage = `Error: ${error.message}`;
-                showCustomAlert('OCR Processing Error', errorMessage);
+                let formattedErrorMessage = `OCR Processing Failed! Details: ${errorMessage}`;
+                let ocrTableHtml = '';
+
+                try {
+                    // Attempt to parse the error message if it contains JSON
+                    const jsonStartIndex = errorMessage.indexOf('{');
+                    if (jsonStartIndex !== -1) {
+                        const jsonPart = errorMessage.substring(jsonStartIndex);
+                        const errorData = JSON.parse(jsonPart);
+
+                        if (errorData.errors && errorData.errors.length > 0) {
+                            const errorReason = errorData.errors[0].message;
+                            const errorCode = errorData.errors[0].code;
+                            formattedErrorMessage = `Error! Reason: ${errorReason}, Code: ${errorCode}`;
+                        } else if (errorData.error || errorData.message) {
+                            formattedErrorMessage = `Error! Reason: ${errorData.error || errorData.message}`;
+                        } else {
+                             formattedErrorMessage = `Error! Raw response: ${JSON.stringify(errorData)}`;
+                        }
+
+
+                        // Check for ocrResult even in error responses
+                        if (errorData.ocrResult) {
+                            const extractedData = errorData.ocrResult;
+                            ocrTableHtml = `<p class="text-vida-dark-text mt-4 font-semibold">Partial OCR Result (from Error Response):</p>
+                                <table class="ocr-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Field</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+                            for (const key in extractedData) {
+                                if (Object.hasOwnProperty.call(extractedData, key)) {
+                                    const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                                    ocrTableHtml += `<tr>
+                                        <td>${readableKey}</td>
+                                        <td>${extractedData[key] || 'N/A'}</td>
+                                    </tr>`;
+                                }
+                            }
+                            ocrTableHtml += `</tbody></table>`;
+                        }
+                    }
+                } catch (parseError) {
+                    console.warn("Could not parse detailed error JSON:", parseError);
+                    // Fallback to original errorMessage if parsing fails
+                }
+
+                showCustomAlert('OCR Error', formattedErrorMessage); // Show a general alert
                 apiResponse.innerHTML = `
-                    <p class="text-red-500 font-semibold">OCR Processing Failed!</p>
-                    <p class="text-red-500 text-sm mt-2">Details: ${errorMessage}</p>
-                    <p class="text-vida-dark-text text-xs mt-2">Please check your network connection, access token, and the image file.</p>
+                    <p class="text-red-500 font-semibold">${formattedErrorMessage}</p>
+                    <p class="text-red-500 text-sm mt-2">Please check your network connection and the image file.</p>
+                    ${ocrTableHtml}
                 `;
             } finally {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator
@@ -278,5 +328,6 @@
     </script>
 </body>
 </html>
+
 
 
