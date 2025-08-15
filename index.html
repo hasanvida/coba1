@@ -47,10 +47,7 @@
             <img src="VIDA_2023-09.webp" alt="VIDA Logo" class="mb-6 h-12 object-contain" onerror="this.onerror=null; this.src='https://placehold.co/150x50/FFFFFF/000000?text=VIDA+Logo';">
             <h2 class="text-2xl font-bold text-vida-navy mb-6">KTP OCR Service</h2>
 
-            <div class="mb-4 w-full">
-                <label for="accessToken" class="block text-lg font-medium text-vida-dark-text mb-2">Access Token:</label>
-                <input type="text" id="accessToken" class="w-full text-gray-900 bg-white border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-vida-green focus:border-vida-green" placeholder="Paste your access token here">
-            </div>
+            <!-- Removed Access Token input field -->
 
             <div class="mb-6 w-full">
                 <label for="imageUpload" class="block text-lg font-medium text-vida-dark-text mb-2">Select KTP Image:</label>
@@ -77,7 +74,7 @@
             <pre id="apiResponse" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner">
                 <code class="language-json">
                     {
-    "message": "Upload an image, paste your access token, and click 'Process OCR' to see the response.",
+    "message": "Upload an image and click 'Process OCR' to see the response.",
     "instructions": "The OCR result will appear here."
 }
                 </code>
@@ -98,7 +95,7 @@
 
     <script>
         // Get references to DOM elements
-        const accessTokenInput = document.getElementById('accessToken');
+        // const accessTokenInput = document.getElementById('accessToken'); // Removed
         const imageUpload = document.getElementById('imageUpload');
         const imagePreview = document.getElementById('imagePreview');
         const processOcrButton = document.getElementById('processOcrButton');
@@ -149,7 +146,7 @@
                 apiResponse.innerHTML = `<code class="language-json">
                     {
                         "message": "No image selected. Please upload an image.",
-                        "instructions": "Paste Access Token and upload KTP image to begin."
+                        "instructions": "Upload KTP image to begin OCR processing."
                     }
                 </code>`;
             }
@@ -157,11 +154,9 @@
 
         // Event listener for processing OCR
         processOcrButton.addEventListener('click', async function() {
-            const accessToken = accessTokenInput.value.trim();
-            if (!accessToken) {
-                showCustomAlert('Missing Access Token', 'Please paste your Access Token to proceed.');
-                return;
-            }
+            // No need for accessToken input as it's handled by the Netlify Function
+            // const accessToken = accessTokenInput.value.trim();
+            // if (!accessToken) { ... } // Removed validation
 
             if (!base64Image) {
                 showCustomAlert('No Image Selected', 'Please select a KTP image file to process.');
@@ -172,10 +167,10 @@
             apiResponse.textContent = ''; // Clear previous response
 
             try {
-                const proxyUrl = '/.netlify/functions/process-ocr'; // Endpoint for the new OCR Netlify Function
+                const proxyUrl = '/.netlify/functions/process-ocr'; // Endpoint for the OCR Netlify Function
 
                 const payload = {
-                    accessToken: accessToken, // Send access token to the function
+                    // accessToken is no longer sent from frontend, handled by function
                     ocrPayload: { // The OCR specific payload
                         "operations": ["ocr", "idVerification"],
                         "payload": {
@@ -233,6 +228,7 @@
     </script>
 </body>
 </html>
+
 
 
 
