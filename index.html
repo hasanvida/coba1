@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIDA API Authentication</title>
+    <title>VIDA KTP OCR</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -41,55 +41,56 @@
     </style>
 </head>
 <body class="bg-vida-light-gray min-h-screen flex items-center justify-center p-4">
-    <div class="bg-vida-white shadow-xl rounded-xl p-8 max-w-4xl w-full flex flex-col gap-8 rounded-elements">
-        <h1 class="text-3xl font-bold text-vida-navy text-center mb-6">VIDA API Authentication</h1>
+    <div class="bg-vida-white shadow-xl rounded-xl p-8 max-w-6xl w-full flex flex-col lg:flex-row gap-8 rounded-elements">
+        <!-- Left Part: Image Upload and Preview -->
+        <div class="flex-1 flex flex-col items-center justify-center p-6 bg-vida-light-gray rounded-lg shadow-md">
+            <img src="VIDA_2023-09.webp" alt="VIDA Logo" class="mb-6 h-12 object-contain" onerror="this.onerror=null; this.src='https://placehold.co/150x50/FFFFFF/000000?text=VIDA+Logo';">
+            <h2 class="text-2xl font-bold text-vida-navy mb-6">KTP OCR Service</h2>
 
-        <div class="flex flex-col md:flex-row gap-8">
-            <!-- Left Part: Input Fields -->
-            <div class="flex-1 flex flex-col p-6 bg-vida-light-gray rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold text-vida-navy mb-6">Client Credentials</h2>
-
-                <div class="mb-4">
-                    <label for="clientId" class="block text-lg font-medium text-vida-dark-text mb-2">Client ID:</label>
-                    <input type="text" id="clientId" class="w-full text-gray-900 bg-white border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-vida-green focus:border-vida-green" placeholder="Enter your Client ID">
-                </div>
-
-                <div class="mb-6">
-                    <label for="clientSecret" class="block text-lg font-medium text-vida-dark-text mb-2">Client Secret:</label>
-                    <input type="password" id="clientSecret" class="w-full text-gray-900 bg-white border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-vida-green focus:border-vida-green" placeholder="Enter your Client Secret">
-                </div>
-
-                <button id="authenticateButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
-                    Get Access Token
-                </button>
+            <div class="mb-4 w-full">
+                <label for="accessToken" class="block text-lg font-medium text-vida-dark-text mb-2">Access Token:</label>
+                <input type="text" id="accessToken" class="w-full text-gray-900 bg-white border border-gray-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-vida-green focus:border-vida-green" placeholder="Paste your access token here">
             </div>
 
-            <!-- Right Part: API Response Display -->
-            <div class="flex-1 flex flex-col p-6 bg-vida-light-gray rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold text-vida-navy mb-6">API Response</h2>
+            <div class="mb-6 w-full">
+                <label for="imageUpload" class="block text-lg font-medium text-vida-dark-text mb-2">Select KTP Image:</label>
+                <input type="file" id="imageUpload" accept="image/*" class="w-full text-gray-900 bg-white border border-gray-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-vida-green focus:border-vida-green p-2.5">
+            </div>
 
-                <div id="loadingIndicator" class="hidden text-center text-vida-green font-medium mb-4">
-                    Authenticating...
-                </div>
+            <div class="mb-6 w-full flex justify-center items-center h-64 bg-gray-200 rounded-lg overflow-hidden border border-gray-300">
+                <img id="imagePreview" src="https://placehold.co/400x250/E2E8F0/A0AEC0?text=Image+Preview" alt="Image Preview" class="max-w-full max-h-full object-contain rounded-md shadow-inner">
+            </div>
 
-                <pre id="apiResponse" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner">
-                    <code class="language-json">
-                        {
-    "message": "Enter Client ID and Client Secret, then click 'Get Access Token'.",
-    "instructions": "The access token will appear here."
+            <button id="processOcrButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
+                Process OCR
+            </button>
+        </div>
+
+        <!-- Right Part: API Response Display -->
+        <div class="flex-1 flex flex-col p-6 bg-vida-light-gray rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-vida-navy mb-6">OCR API Response</h2>
+
+            <div id="loadingIndicator" class="hidden text-center text-vida-green font-medium mb-4">
+                Processing image...
+            </div>
+
+            <pre id="apiResponse" class="flex-grow bg-vida-code-bg text-vida-code-text p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap leading-relaxed shadow-inner">
+                <code class="language-json">
+                    {
+    "message": "Upload an image, paste your access token, and click 'Process OCR' to see the response.",
+    "instructions": "The OCR result will appear here."
 }
-                    </code>
-                </pre>
+                </code>
+            </pre>
 
-                <!-- Custom Modal for Alerts -->
-                <div id="customAlertDialog" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-                    <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-                        <h3 id="alertDialogTitle" class="text-xl font-bold text-vida-navy mb-4"></h3>
-                        <p id="alertDialogMessage" class="text-vida-dark-text mb-6"></p>
-                        <button id="alertDialogCloseButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-2.5 rounded-lg transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
-                            OK
-                        </button>
-                    </div>
+            <!-- Custom Modal for Alerts -->
+            <div id="customAlertDialog" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                    <h3 id="alertDialogTitle" class="text-xl font-bold text-vida-navy mb-4"></h3>
+                    <p id="alertDialogMessage" class="text-vida-dark-text mb-6"></p>
+                    <button id="alertDialogCloseButton" class="w-full bg-vida-green hover:bg-vida-green-dark text-white font-semibold py-2.5 rounded-lg transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-vida-green focus:ring-offset-2">
+                        OK
+                    </button>
                 </div>
             </div>
         </div>
@@ -97,9 +98,10 @@
 
     <script>
         // Get references to DOM elements
-        const clientIdInput = document.getElementById('clientId');
-        const clientSecretInput = document.getElementById('clientSecret');
-        const authenticateButton = document.getElementById('authenticateButton');
+        const accessTokenInput = document.getElementById('accessToken');
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const processOcrButton = document.getElementById('processOcrButton');
         const apiResponse = document.getElementById('apiResponse');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
@@ -121,53 +123,106 @@
             customAlertDialog.classList.add('hidden');
         });
 
-        // Event listener for authentication button click
-        authenticateButton.addEventListener('click', async function() {
-            const clientId = clientIdInput.value.trim();
-            const clientSecret = clientSecretInput.value.trim();
+        let base64Image = ''; // To store the base64 version of the uploaded image
 
-            if (!clientId || !clientSecret) {
-                showCustomAlert('Missing Credentials', 'Please enter both Client ID and Client Secret.');
+        // Event listener for image upload
+        imageUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    // Store base64 without the "data:image/jpeg;base64," prefix
+                    base64Image = e.target.result.split(',')[1];
+                    apiResponse.innerHTML = `<code class="language-json">
+                        {
+                            "message": "Image uploaded successfully. Ready to process.",
+                            "fileName": "${file.name}",
+                            "fileSize": "${(file.size / 1024).toFixed(2)} KB"
+                        }
+                    </code>`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = "https://placehold.co/400x250/E2E8F0/A0AEC0?text=Image+Preview"; // Reset to placeholder
+                base64Image = '';
+                apiResponse.innerHTML = `<code class="language-json">
+                    {
+                        "message": "No image selected. Please upload an image.",
+                        "instructions": "Paste Access Token and upload KTP image to begin."
+                    }
+                </code>`;
+            }
+        });
+
+        // Event listener for processing OCR
+        processOcrButton.addEventListener('click', async function() {
+            const accessToken = accessTokenInput.value.trim();
+            if (!accessToken) {
+                showCustomAlert('Missing Access Token', 'Please paste your Access Token to proceed.');
+                return;
+            }
+
+            if (!base64Image) {
+                showCustomAlert('No Image Selected', 'Please select a KTP image file to process.');
                 return;
             }
 
             loadingIndicator.classList.remove('hidden'); // Show loading indicator
-            apiResponse.innerHTML = `<code class="language-json">Authenticating...</code>`; // Clear previous response
+            apiResponse.textContent = ''; // Clear previous response
 
             try {
-                // Call the Netlify Function endpoint
-                const proxyUrl = '/.netlify/functions/authenticate'; // This is the endpoint for your Netlify Function
+                const proxyUrl = '/.netlify/functions/process-ocr'; // Endpoint for the new OCR Netlify Function
+
+                const payload = {
+                    accessToken: accessToken, // Send access token to the function
+                    ocrPayload: { // The OCR specific payload
+                        "operations": ["ocr", "idVerification"],
+                        "payload": {
+                            "partnerTrxId": "WEB_APP_OCR_" + Date.now(), // Generate a unique ID
+                            "groupId": "92aedad3-f0ee-4ffa-8ae7-04a976ae4718", // As per your curl example
+                            "idType": "ID_CARD",
+                            "country": "IDN",
+                            "idSubtype": "KTP",
+                            "idFrontSideImage": base64Image // Your base64 image here
+                        },
+                        "userConsent": {
+                            "userIP": "0.0.0.0", // Placeholder, you might want to get actual IP
+                            "country": "IDN",
+                            "obtained": true,
+                            "obtainedAt": Math.floor(Date.now() / 1000).toString() // Current timestamp in seconds
+                        }
+                    }
+                };
 
                 const response = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json' // Send as JSON to the Netlify Function
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ clientId, clientSecret }) // Send client credentials as JSON
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
-                    // Netlify Function or VIDA API returned an error
                     let errorDetails = `HTTP Status: ${response.status}`;
                     try {
                         const errorData = await response.json();
-                        errorDetails = errorData.error || JSON.stringify(errorData, null, 2); // Netlify Function error format
+                        errorDetails = errorData.error || JSON.stringify(errorData, null, 2);
                     } catch (parseError) {
                         errorDetails = response.statusText;
                     }
-                    throw new Error(`Authentication request failed: ${errorDetails}`);
+                    throw new Error(`OCR request failed: ${errorDetails}`);
                 }
 
                 const data = await response.json();
                 apiResponse.innerHTML = `<code class="language-json">${JSON.stringify(data, null, 2)}</code>`;
-                // You can store the access token (data.access_token) here for future API calls
-                // console.log("Access Token:", data.access_token);
+
             } catch (error) {
                 let errorMessage = `Error: ${error.message}`;
-                showCustomAlert('Authentication Error', errorMessage);
+                showCustomAlert('OCR Processing Error', errorMessage);
                 apiResponse.innerHTML = `<code class="language-json">
                     {
-                        "error": "Authentication Failed",
+                        "error": "OCR Processing Failed",
                         "details": "${errorMessage}"
                     }
                 </code>`;
@@ -178,5 +233,6 @@
     </script>
 </body>
 </html>
+
 
 
